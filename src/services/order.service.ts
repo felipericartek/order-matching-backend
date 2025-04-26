@@ -3,70 +3,94 @@ import { AppDataSource } from '../../ormconfig';
 import { Order } from '../entities/Order';
 import { User } from '../entities/User';
 import { emitUpdate } from '../socket/socket';
+import { tryMatchOrder } from './match.service'; // Aqui integra o match automático
 
-export const createOrder = async (req: any, res: Response) => {
-    const { amount, price, type } = req.body;
-    const userId = req.user.id;
+interface AuthenticatedRequest extends Request {
+    user: {
+        id: number;
+    };
+}
 
-    const userRepo = AppDataSource.getRepository(User);
-    const orderRepo = AppDataSource.getRepository(Order);
+export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const { amount, price, type } = req.body;
+        const userId = req.user.id;
 
-    const user = await userRepo.findOneBy({ id: userId });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+        const userRepo = AppDataSource.getRepository(User);
+        const orderRepo = AppDataSource.getRepository(Order);
 
-    const order = orderRepo.create({
-        amount,
-        price,
-        type,
-        user,
-    });
+        const user = await userRepo.findOneBy({ id: userId });
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-    await orderRepo.save(order);
+        const order = orderRepo.create({ amount, price, type, user });
+        await orderRepo.save(order);
 
-    emitUpdate('new_order', { order });
+        // Matching automático após criar ordem
+        await tryMatchOrder(order);
 
-    return res.status(201).json(order);
-};
+        emitUpdate('new_order', { order });
 
-export const getMyOrders = async (req: any, res: Response) => {
-    const userId = req.user.id;
-    const orderRepo = AppDataSource.getRepository(Order);
-
-    const orders = await orderRepo.find({
-        where: { user: { id: userId }, status: 'ACTIVE' },
-    });
-
-    return res.json(orders);
-};
-
-export const getMyHistory = async (req: any, res: Response) => {
-    const userId = req.user.id;
-    const orderRepo = AppDataSource.getRepository(Order);
-
-    const orders = await orderRepo.find({
-        where: { user: { id: userId }, status: 'COMPLETED' },
-    });
-
-    return res.json(orders);
-};
-
-export const cancelOrder = async (req: any, res: Response) => {
-    const userId = req.user.id;
-    const orderId = parseInt(req.params.id);
-    const orderRepo = AppDataSource.getRepository(Order);
-
-    const order = await orderRepo.findOne({
-        where: { id: orderId, user: { id: userId }, status: 'ACTIVE' },
-    });
-
-    if (!order) {
-        return res.status(404).json({ message: 'Order not found or already completed' });
+        return res.status(201).json(order);
+    } catch (error) {
+        console.error('Error creating order:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
+};
 
-    order.status = 'CANCELLED';
-    await orderRepo.save(order);
+export const getMyOrders = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const userId = req.user.id;
+        const orderRepo = AppDataSource.getRepository(Order);
 
-    emitUpdate('order_cancelled', { order });
+        const orders = await orderRepo.find({
+            where: { user: { id: userId }, status: 'ACTIVE' },
+        });
 
-    return res.json({ message: 'Order cancelled successfully' });
+        return res.json(orders);
+    } catch (error) {
+        console.error('Error fetching active orders:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export const getMyHistory = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const userId = req.user.id;
+        const orderRepo = AppDataSource.getRepository(Order);
+
+        const orders = await orderRepo.find({
+            where: { user: { id: userId }, status: 'COMPLETED' },
+        });
+
+        return res.json(orders);
+    } catch (error) {
+        console.error('Error fetching order history:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export const cancelOrder = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const userId = req.user.id;
+        const orderId = parseInt(req.params.id, 10);
+        const orderRepo = AppDataSource.getRepository(Order);
+
+        const order = await orderRepo.findOne({
+            where: { id: orderId, user: { id: userId }, status: 'ACTIVE' },
+        });
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found or already completed' });
+        }
+
+        order.status = 'CANCELLED';
+        await orderRepo.save(order);
+
+        emitUpdate('order_cancelled', { order });
+
+        return res.json({ message: 'Order cancelled successfully' });
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
 };
