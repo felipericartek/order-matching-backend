@@ -1,17 +1,13 @@
-import { createServer } from 'http';
-import { Server } from 'socket.io';
 import app from './app';
-import { setupSocket } from './socket/socket';
+import { createServer } from 'http';
+import { initSocket } from './socket/socket';
 
-const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  }
-});
+const PORT = process.env.PORT || 3001;
 
-setupSocket(io);
+const httpServer = createServer(app);
 
-server.listen(3001, () => {
-  console.log('Server is running on port 3001');
+initSocket(httpServer);
+
+httpServer.listen(PORT, () => {
+  console.log(`🚀 Server rodando em http://localhost:${PORT}`);
 });

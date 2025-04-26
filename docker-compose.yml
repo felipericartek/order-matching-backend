@@ -20,5 +20,36 @@ services:
     ports:
       - "6379:6379"
 
+  backend:
+    build:
+      context: ./order-matching-backend
+    container_name: backend
+    restart: always
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=secret
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - DB_DATABASE=order_matching
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  frontend:
+    build:
+      context: ./order-matching-frontend
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
 volumes:
   db_data:
