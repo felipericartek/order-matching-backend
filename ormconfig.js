@@ -1,25 +1,16 @@
-{
-  "name": "order-matching-backend",
-  "version": "1.0.0",
-  "main": "dist/server.js",
-  "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js"
-  },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.3.0",
-    "reflect-metadata": "^0.1.13",
-    "redis": "^4.6.7",
-    "socket.io": "^4.7.2",
-    "typeorm": "^0.3.20"
-  },
-  "devDependencies": {
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.2.2"
-  }
-}
+import { DataSource } from 'typeorm';
+import { User } from './src/entities/User';
+import { Order } from './src/entities/Order';
+import { Match } from './src/entities/Match';
+
+export const AppDataSource = new DataSource({
+  type: 'mysql',
+  host: 'localhost',
+  port: 3306,
+  username: 'root',
+  password: 'root',
+  database: 'order_matching',
+  synchronize: true,
+  logging: false,
+  entities: [User, Order, Match],
+});

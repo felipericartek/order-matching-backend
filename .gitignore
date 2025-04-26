@@ -1,0 +1,36 @@
+# Node.js
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+
+# Docker files (caso gere artefatos locais)
+docker-compose.override.yml
+docker-data/
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE settings
+.idea/
+.vscode/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Misc
+coverage/
+tmp/
+.cache/
