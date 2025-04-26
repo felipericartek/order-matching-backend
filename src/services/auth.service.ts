@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { AppDataSource } from '../../ormconfig';
 import { User } from '../entities/User';
 import jwt from 'jsonwebtoken';
+import { AppDataSource } from '../../ormconfig';
 
 export const login = async (req: Request, res: Response) => {
     const { username } = req.body;

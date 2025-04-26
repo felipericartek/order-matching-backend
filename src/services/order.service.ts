@@ -1,31 +1,27 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { AppDataSource } from '../../ormconfig';
 import { Order } from '../entities/Order';
 import { User } from '../entities/User';
 import { emitUpdate } from '../socket/socket';
-import { tryMatchOrder } from './match.service'; // Aqui integra o match automático
-
-interface AuthenticatedRequest extends Request {
-    user: {
-        id: number;
-    };
-}
+import { tryMatchOrder } from './match.service';
+import {AuthenticatedRequest} from "../middlewares/auth.middleware";
 
 export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { amount, price, type } = req.body;
-        const userId = req.user.id;
+        const userId = req.user!.id;
 
         const userRepo = AppDataSource.getRepository(User);
         const orderRepo = AppDataSource.getRepository(Order);
 
         const user = await userRepo.findOneBy({ id: userId });
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         const order = orderRepo.create({ amount, price, type, user });
         await orderRepo.save(order);
 
-        // Matching automático após criar ordem
         await tryMatchOrder(order);
 
         emitUpdate('new_order', { order });
@@ -39,7 +35,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getMyOrders = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user!.id;
         const orderRepo = AppDataSource.getRepository(Order);
 
         const orders = await orderRepo.find({
@@ -55,7 +51,7 @@ export const getMyOrders = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getMyHistory = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user!.id;
         const orderRepo = AppDataSource.getRepository(Order);
 
         const orders = await orderRepo.find({
@@ -71,7 +67,7 @@ export const getMyHistory = async (req: AuthenticatedRequest, res: Response) => 
 
 export const cancelOrder = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user!.id;
         const orderId = parseInt(req.params.id, 10);
         const orderRepo = AppDataSource.getRepository(Order);
 

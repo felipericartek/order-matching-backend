@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { createOrder, cancelOrder, getMyOrders, getMyHistory } from '../services/order.service';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { authMiddleware } from '../middlewares/auth.middleware';
+import {cancelOrder, createOrder, getMyHistory, getMyOrders} from "../services/order.service";
 
 const router = Router();
 
