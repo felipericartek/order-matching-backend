@@ -1,10 +1,15 @@
 {
   "name": "order-matching-backend",
   "version": "1.0.0",
+  "description": "Order Matching System Backend (Node.js, TypeScript, Express, TypeORM, Redis, Socket.IO)",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:port": "PORT=3002 ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "start:dev": "npm run dev",
+    "start:prod": "npm run build && npm run start"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -28,5 +33,17 @@
     "@types/socket.io": "^3.0.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.2.2"
-  }
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "typeorm",
+    "typescript",
+    "backend",
+    "socket.io",
+    "redis",
+    "order-matching"
+  ],
+  "author": "Seu Nome",
+  "license": "MIT"
 }

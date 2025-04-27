@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { AppDataSource } from '../../ormconfig';
+import { AppDataSource } from '../ormconfig';
 import { Match } from '../entities/Match';
 import { User } from '../entities/User';
 import { MoreThanOrEqual } from 'typeorm';

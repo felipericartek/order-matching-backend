@@ -1,26 +1,44 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { User } from './User';
 
+export enum OrderType {
+    BUY = 'BUY',
+    SELL = 'SELL',
+}
+
+export enum OrderStatus {
+    ACTIVE = 'ACTIVE',
+    COMPLETED = 'COMPLETED',
+    CANCELLED = 'CANCELLED',
+}
+
 @Entity()
 export class Order {
     @PrimaryGeneratedColumn()
-    id: number;
+    id!: number;
 
-    @ManyToOne(() => User)
-    user: User;
+    @ManyToOne(() => User, { eager: true })
+    user!: User;
 
-    @Column()
-    type: 'BUY' | 'SELL';
+    @Column({
+        type: 'enum',
+        enum: OrderType,
+    })
+    type!: OrderType;
 
     @Column('decimal', { precision: 18, scale: 8 })
-    amount: number;
+    amount!: number;
 
     @Column('decimal', { precision: 18, scale: 2 })
-    price: number;
+    price!: number;
 
-    @Column({ default: 'ACTIVE' })
-    status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+    @Column({
+        type: 'enum',
+        enum: OrderStatus,
+        default: OrderStatus.ACTIVE,
+    })
+    status!: OrderStatus;
 
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
 }
