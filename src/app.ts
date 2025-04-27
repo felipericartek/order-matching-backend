@@ -1,27 +1,21 @@
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-
-import authRoutes from './controllers/auth.controller';
-import orderRoutes from './controllers/order.controller';
-import statisticsRoutes from './controllers/statistics.controller';
-import { AppDataSource } from '../ormconfig';
+import { authMiddleware } from './middlewares/auth.middleware';
+import { login } from './services/auth.service';
+import {cancelOrder, createOrder, getMyHistory, getMyOrders} from "./services/order.service";
+import {getStatistics} from "./services/statistics.service";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/auth', authRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/statistics', statisticsRoutes);
+app.post('/api/auth/login', login);
 
-AppDataSource.initialize()
-    .then(() => {
-        console.log('✅ Banco de dados conectado com sucesso!');
-    })
-    .catch((error) => {
-        console.error('❌ Erro na conexão com o banco de dados:', error);
-    });
+app.post('/api/orders', authMiddleware, createOrder);
+app.get('/api/orders/active', authMiddleware, getMyOrders);
+app.get('/api/orders/history', authMiddleware, getMyHistory);
+app.delete('/api/orders/:id', authMiddleware, cancelOrder);
+app.get('/api/statistics', authMiddleware, getStatistics);
 
 export default app;

@@ -5,7 +5,7 @@ import { User } from '../entities/User';
 import { MoreThanOrEqual } from 'typeorm';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 
-export const getStatistics = async (req: AuthenticatedRequest, res: Response) => {
+export const getStatistics = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
         const matchRepo = AppDataSource.getRepository(Match);
         const userRepo = AppDataSource.getRepository(User);
@@ -33,10 +33,11 @@ export const getStatistics = async (req: AuthenticatedRequest, res: Response) =>
 
         const user = await userRepo.findOneBy({ id: req.user!.id });
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            res.status(404).json({ message: 'User not found' });
+            return;
         }
 
-        return res.json({
+        res.json({
             lastPrice,
             volumeBTC,
             volumeUSD,
@@ -47,6 +48,6 @@ export const getStatistics = async (req: AuthenticatedRequest, res: Response) =>
         });
     } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
