@@ -1,17 +1,15 @@
 import { Response } from 'express';
-import { AppDataSource } from '../../ormconfig';
-import { Order } from '../entities/Order';
+import { AppDataSource } from '../ormconfig';
+import { Order, OrderStatus } from '../entities/Order';
+import { User } from '../entities/User';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
-import { emitUpdate } from '../socket/socket';
-import { matchQueue } from '../queues/matchQueue';
 
-// Criar nova ordem
 export const createOrder = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
         const { amount, price, type } = req.body;
         const userId = req.user!.id;
 
-        const userRepo = AppDataSource.getRepository('User');
+        const userRepo = AppDataSource.getRepository(User);
         const orderRepo = AppDataSource.getRepository(Order);
 
         const user = await userRepo.findOneBy({ id: userId });
@@ -23,10 +21,6 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
         const order = orderRepo.create({ amount, price, type, user });
         await orderRepo.save(order);
 
-        await matchQueue.add('match-order', { orderId: order.id });
-
-        emitUpdate('new_order', { order });
-
         res.status(201).json(order);
     } catch (error) {
         console.error('Error creating order:', error);
@@ -34,13 +28,16 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
     }
 };
 
-// Listar ordens ativas
 export const getMyOrders = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
+        const userId = req.user!.id;
         const orderRepo = AppDataSource.getRepository(Order);
+
         const orders = await orderRepo.find({
-            where: { user: { id: req.user!.id }, status: 'ACTIVE' },
+            where: { user: { id: userId }, status: OrderStatus.ACTIVE },
+            order: { createdAt: 'DESC' },
         });
+
         res.json(orders);
     } catch (error) {
         console.error('Error fetching active orders:', error);
@@ -48,13 +45,16 @@ export const getMyOrders = async (req: AuthenticatedRequest, res: Response): Pro
     }
 };
 
-// Listar histórico de ordens completadas
 export const getMyHistory = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
+        const userId = req.user!.id;
         const orderRepo = AppDataSource.getRepository(Order);
+
         const orders = await orderRepo.find({
-            where: { user: { id: req.user!.id }, status: 'COMPLETED' },
+            where: { user: { id: userId }, status: OrderStatus.COMPLETED },
+            order: { createdAt: 'DESC' },
         });
+
         res.json(orders);
     } catch (error) {
         console.error('Error fetching order history:', error);
@@ -62,27 +62,23 @@ export const getMyHistory = async (req: AuthenticatedRequest, res: Response): Pr
     }
 };
 
-// Cancelar ordem
 export const cancelOrder = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-        const orderId = parseInt(req.params.id);
         const userId = req.user!.id;
-
+        const orderId = parseInt(req.params.id, 10);
         const orderRepo = AppDataSource.getRepository(Order);
 
         const order = await orderRepo.findOne({
-            where: { id: orderId, user: { id: userId }, status: 'ACTIVE' },
+            where: { id: orderId, user: { id: userId }, status: OrderStatus.ACTIVE },
         });
 
         if (!order) {
-            res.status(404).json({ message: 'Order not found or already completed' });
+            res.status(404).json({ message: 'Order not found or already completed/cancelled' });
             return;
         }
 
-        order.status = 'CANCELLED';
+        order.status = OrderStatus.CANCELLED;
         await orderRepo.save(order);
-
-        emitUpdate('order_cancelled', { order });
 
         res.json({ message: 'Order cancelled successfully' });
     } catch (error) {

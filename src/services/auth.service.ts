@@ -1,20 +1,32 @@
 import { Request, Response } from 'express';
+import { AppDataSource } from '../ormconfig';
 import { User } from '../entities/User';
 import jwt from 'jsonwebtoken';
-import { AppDataSource } from '../../ormconfig';
 
-export const login = async (req: Request, res: Response) => {
-    const { username } = req.body;
-    const userRepo = AppDataSource.getRepository(User);
+export const login = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { username } = req.body;
 
-    let user = await userRepo.findOne({ where: { username } });
+        if (!username) {
+            res.status(400).json({ message: 'Username is required' });
+            return;
+        }
 
-    if (!user) {
-        user = userRepo.create({ username });
-        await userRepo.save(user);
+        const userRepo = AppDataSource.getRepository(User);
+
+        let user = await userRepo.findOneBy({ username });
+
+        if (!user) {
+            user = userRepo.create({ username });
+            await userRepo.save(user);
+        }
+
+        const secretKey = process.env.JWT_SECRET || 'secret';
+        const token = jwt.sign({ id: user.id }, secretKey, { expiresIn: '24h' });
+
+        res.json({ token });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
-
-    const token = jwt.sign({ id: user.id }, 'your-secret-key', { expiresIn: '7d' });
-
-    res.json({ token });
 };
