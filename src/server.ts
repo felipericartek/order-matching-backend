@@ -1,13 +1,9 @@
-import app from './app';
-import { createServer } from 'http';
-import { initSocket } from './socket/socket';
+import {AppDataSource} from "../ormconfig";
 
-const PORT = process.env.PORT || 3001;
-
-const httpServer = createServer(app);
-
-initSocket(httpServer);
-
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server rodando em http://localhost:${PORT}`);
-});
+AppDataSource.initialize()
+    .then(() => {
+      console.log('🟢 Banco conectado com sucesso!');
+    })
+    .catch((error) => {
+      console.error('🔴 Erro na conexão do banco:', error);
+    });
