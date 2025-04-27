@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { AppDataSource } from '../../ormconfig';
+import { AppDataSource } from '../ormconfig';
 import { Match } from '../entities/Match';
 import { User } from '../entities/User';
 import { MoreThanOrEqual } from 'typeorm';
@@ -20,9 +20,7 @@ export const getStatistics = async (req: AuthenticatedRequest, res: Response): P
         const lastPrice = lastMatch ? lastMatch.price : 0;
 
         const matches24h = await matchRepo.find({
-            where: {
-                createdAt: MoreThanOrEqual(last24h),
-            },
+            where: { createdAt: MoreThanOrEqual(last24h) },
         });
 
         const volumeBTC = matches24h.reduce((sum, match) => sum + match.amount, 0);
@@ -47,7 +45,7 @@ export const getStatistics = async (req: AuthenticatedRequest, res: Response): P
             btcBalance: user.btcBalance,
         });
     } catch (error) {
-        console.error('Erro ao buscar estatísticas:', error);
+        console.error('Error fetching statistics:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };

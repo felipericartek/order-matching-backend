@@ -1,30 +1,43 @@
-import { Request, Response } from 'express';
-import { User } from '../entities/User';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import {AppDataSource} from "../../ormconfig";
 
-export const login = async (req: Request, res: Response) => {
+export interface AuthenticatedRequest extends Request {
+    user?: {
+        id: number;
+    };
+}
+
+export const authMiddleware = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        res.status(401).json({ message: 'Token missing' });
+        return;
+    }
+
+    const parts = authHeader.split(' ');
+
+    if (parts.length !== 2) {
+        res.status(401).json({ message: 'Token mal formatado' });
+        return;
+    }
+
+    const [scheme, token] = parts;
+
+    if (!/^Bearer$/i.test(scheme)) {
+        res.status(401).json({ message: 'Token mal formatado' });
+        return;
+    }
+
     try {
-        const { username } = req.body;
-
-        if (!username) {
-            return res.status(400).json({ message: 'Username é obrigatório.' });
-        }
-
-        const userRepository = AppDataSource.getRepository(User);
-
-        const user = await userRepository.findOneBy({ username });
-
-        if (!user) {
-            return res.status(401).json({ message: 'Usuário não encontrado.' });
-        }
-
         const secretKey = process.env.JWT_SECRET || 'secret';
-        const token = jwt.sign({ id: user.id }, secretKey, { expiresIn: '1d' });
+        const decoded = jwt.verify(token, secretKey) as { id: number };
 
-        return res.json({ token });
+        req.user = { id: decoded.id };
+
+        next();
     } catch (error) {
-        console.error('Erro no login:', error);
-        return res.status(500).json({ message: 'Erro interno no servidor.' });
+        console.error('JWT verification failed:', error);
+        res.status(401).json({ message: 'Invalid token' });
     }
 };

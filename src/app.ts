@@ -1,21 +1,16 @@
 import express from 'express';
 import cors from 'cors';
-import { authMiddleware } from './middlewares/auth.middleware';
-import { login } from './services/auth.service';
-import {cancelOrder, createOrder, getMyHistory, getMyOrders} from "./services/order.service";
-import {getStatistics} from "./services/statistics.service";
+import authRouter from './routes/auth.routes';
+import orderRouter from './routes/order.routes';
+import statisticsRouter from './routes/statistics.routes';
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/auth/login', login);
-
-app.post('/api/orders', authMiddleware, createOrder);
-app.get('/api/orders/active', authMiddleware, getMyOrders);
-app.get('/api/orders/history', authMiddleware, getMyHistory);
-app.delete('/api/orders/:id', authMiddleware, cancelOrder);
-app.get('/api/statistics', authMiddleware, getStatistics);
+app.use('/api/auth', authRouter);
+app.use('/api/orders', orderRouter);
+app.use('/api/statistics', statisticsRouter);
 
 export default app;

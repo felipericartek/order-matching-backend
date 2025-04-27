@@ -1,18 +1,27 @@
-FROM node:20-alpine AS builder
+# Etapa 1: Build da aplicação
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm install
 
-COPY . .
+COPY tsconfig.json ./
+COPY src ./src
 
-FROM node:20-alpine
+RUN npm run build
+
+# Etapa 2: Imagem final para produção
+FROM node:18-alpine
 
 WORKDIR /app
 
-COPY --from=builder /app .
+COPY package.json package-lock.json ./
+RUN npm install --only=production
 
-EXPOSE 3001
+COPY --from=build /app/dist ./dist
 
-CMD ["npm", "run", "dev"]
+ENV NODE_ENV=production
+ENV PORT=3001
+
+CMD ["node", "dist/server.js"]
